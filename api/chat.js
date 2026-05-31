@@ -282,12 +282,15 @@ function detectLanguage(text) {
 
 // ログ保存（失敗しても無視する＝ユーザーへの回答に影響しない）
 async function saveLog(question, answer, language) {
-  if (!supabase) return;
-  try {
-    await supabase.from('logs').insert({ question, answer, language });
-    console.log('Log saved');
-  } catch (e) {
-    console.error('Log save failed:', e.message);
+  if (!supabase) {
+    console.log('Supabase not configured, skipping log');
+    return;
+  }
+  const { error } = await supabase.from('logs').insert({ question, answer, language });
+  if (error) {
+    console.error('Log save failed:', error.message, error.details, error.hint);
+  } else {
+    console.log('Log saved successfully');
   }
 }
 
