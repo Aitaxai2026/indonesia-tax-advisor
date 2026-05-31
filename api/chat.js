@@ -281,11 +281,14 @@ function detectLanguage(text) {
 }
 
 // ログ保存（失敗しても無視する＝ユーザーへの回答に影響しない）
-function saveLog(question, answer, language) {
+async function saveLog(question, answer, language) {
   if (!supabase) return;
-  supabase.from('logs').insert({ question, answer, language })
-    .then(() => console.log('Log saved'))
-    .catch(e => console.error('Log save failed:', e.message));
+  try {
+    await supabase.from('logs').insert({ question, answer, language });
+    console.log('Log saved');
+  } catch (e) {
+    console.error('Log save failed:', e.message);
+  }
 }
 
 module.exports = async function handler(req, res) {
@@ -331,7 +334,7 @@ module.exports = async function handler(req, res) {
     const req2 = https.request(options, (resp) => {
       let data = '';
       resp.on('data', chunk => data += chunk);
-      resp.on('end', () => {
+      resp.on('end', async () => {
         try {
           const parsed = JSON.parse(data);
           if (resp.statusCode !== 200) {
@@ -341,7 +344,7 @@ module.exports = async function handler(req, res) {
             res.status(200).json({ answer: text });
 
             // ログ保存（回答を返した後に実行。失敗しても影響なし）
-            saveLog(userQuestion, text, detectLanguage(userQuestion));
+            await saveLog(userQuestion, text, detectLanguage(userQuestion));
           }
         } catch (e) {
           res.status(500).json({ error: `Parse error: ${data}` });
